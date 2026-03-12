@@ -1,5 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 
+const MODEL = 'gemini-3.1-pro-preview';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const { phrase } = req.body;
@@ -34,16 +36,29 @@ export default async function handler(req, res) {
   try {
     const ai = new GoogleGenAI({ apiKey: key });
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-preview-04-17',
-      config: {
-        maxOutputTokens: 1500,
-        temperature: 0.8,
+    const config = {
+      thinkingConfig: {
+        thinkingBudget: 8000,
       },
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      maxOutputTokens: 1500,
+      temperature: 0.8,
+    };
+
+    const contents = [
+      { role: 'user', parts: [{ text: prompt }] },
+    ];
+
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      config,
+      contents,
     });
 
-    let text = response.text || '';
+    let text = '';
+    for await (const chunk of response) {
+      if (chunk.text) text += chunk.text;
+    }
+
     // Strip any markdown fences just in case
     text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
