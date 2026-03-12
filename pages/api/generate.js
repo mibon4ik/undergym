@@ -1,3 +1,5 @@
+import { GoogleGenAI } from '@google/genai';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const { phrase } = req.body;
@@ -30,21 +32,18 @@ export default async function handler(req, res) {
 }`;
 
   try {
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 1500, temperature: 0.8 },
-        }),
-      }
-    );
-    const data = await r.json();
-    if (data.error) return res.status(500).json({ error: data.error.message });
+    const ai = new GoogleGenAI({ apiKey: key });
 
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-preview-04-17',
+      config: {
+        maxOutputTokens: 1500,
+        temperature: 0.8,
+      },
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    });
+
+    let text = response.text || '';
     // Strip any markdown fences just in case
     text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
@@ -57,6 +56,7 @@ export default async function handler(req, res) {
 
     res.json({ objection });
   } catch (e) {
+    console.error('Gemini generate error:', e);
     res.status(500).json({ error: e.message });
   }
 }

@@ -127,7 +127,6 @@ function Header() {
 ══════════════════════════════════════════════════════ */
 function Sidebar() {
   const { view, currentObjId, navigate, studied, favorites, sidebarOpen } = useApp();
-  const total = OBJECTIONS.length + 3; // +community pages
   const done = studied.length;
   const pct = Math.round(done / OBJECTIONS.length * 100);
 
@@ -281,7 +280,6 @@ function ObjectionPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Group steps
   const stepNums = [...new Set(obj.steps.map(s => s.n))];
 
   return (
@@ -834,7 +832,7 @@ function CommunityPage() {
   const { showToast } = useApp();
   const [objections, setObjections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [noKV, setNoKV] = useState(false);
+  const [noBlob, setNoBlob] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [voted, setVoted] = useState({});
 
@@ -843,7 +841,7 @@ function CommunityPage() {
       .then(r => r.json())
       .then(data => {
         setObjections(data.objections || []);
-        setNoKV(!!data.noKV);
+        setNoBlob(!!data.noBlob);
       })
       .catch(() => setObjections([]))
       .finally(() => setLoading(false));
@@ -885,13 +883,13 @@ function CommunityPage() {
         </div>
       </div>
 
-      {noKV && (
+      {noBlob && (
         <div className="comm-no-kv">
-          <div className="comm-no-kv-title">⚠️ Vercel KV не подключён</div>
+          <div className="comm-no-kv-title">⚠️ Vercel Blob не подключён</div>
           <div className="comm-no-kv-text">
-            Для сохранения общих возражений нужна база данных Vercel KV.<br />
-            В Vercel Dashboard: <code>Storage → Create KV Store → Link to project</code>.<br />
-            После этого переменные <code>KV_REST_API_URL</code> и <code>KV_REST_API_TOKEN</code> добавятся автоматически.
+            Для хранения общих возражений нужен Vercel Blob Store.<br />
+            В Vercel Dashboard: <code>Storage → Create Blob Store → Link to project</code>.<br />
+            После этого переменная <code>BLOB_READ_WRITE_TOKEN</code> добавится автоматически.
           </div>
         </div>
       )}
@@ -935,9 +933,7 @@ function CommunityPage() {
               ))}
               {obj.tip && <div className="comm-card-tip">💡 {obj.tip}</div>}
               <div className="comm-card-foot">
-                <div className="comm-card-meta">
-                  {fmt(obj.createdAt)}
-                </div>
+                <div className="comm-card-meta">{fmt(obj.createdAt)}</div>
                 <button
                   className={cls('vote-btn', voted[obj.id] && 'voted')}
                   onClick={() => vote(obj.id)}
@@ -975,7 +971,6 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toastTimer = useRef(null);
 
-  // Restore from localStorage (client only)
   useEffect(() => {
     try {
       const s = JSON.parse(localStorage.getItem('uf_state') || '{}');
@@ -985,7 +980,6 @@ export default function App() {
     } catch {}
   }, []);
 
-  // Persist to localStorage
   useEffect(() => {
     try { localStorage.setItem('uf_state', JSON.stringify({ studied, favorites, notes })); } catch {}
   }, [studied, favorites, notes]);
@@ -1037,7 +1031,6 @@ export default function App() {
         <Header />
         <div className="app-body">
           <Sidebar />
-          {/* Overlay for mobile sidebar */}
           {sidebarOpen && (
             <div
               onClick={() => setSidebarOpen(false)}
